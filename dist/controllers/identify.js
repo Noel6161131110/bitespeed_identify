@@ -32,26 +32,30 @@ const createOrLinkContact = async (req, res) => {
             },
         });
     }
-    const primaryContact = existingContacts.reduce((prev, curr) => curr.linkPrecedence === "primary" &&
-        (!prev || curr.createdAt < prev.createdAt)
-        ? curr
-        : prev);
-    const isNewInfo = !existingContacts.some((c) => c.email === email) ||
-        !existingContacts.some((c) => c.phoneNumber === phoneNumber?.toString());
-    let newSecondaryContact = null;
-    if (isNewInfo) {
-        newSecondaryContact = contactRepo.create({
+    const primaryContacts = existingContacts.filter(c => c.linkPrecedence === "primary");
+    const truePrimary = primaryContacts.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())[0];
+    for (const contact of primaryContacts) {
+        if (contact.id !== truePrimary.id) {
+            contact.linkPrecedence = "secondary";
+            contact.linkedId = truePrimary.id;
+            await contactRepo.save(contact);
+        }
+    }
+    const isNewEmail = email && !existingContacts.some(c => c.email === email);
+    const isNewPhone = phoneNumber && !existingContacts.some(c => c.phoneNumber === phoneNumber?.toString());
+    if (isNewEmail || isNewPhone) {
+        const newSecondaryContact = contactRepo.create({
             email,
             phoneNumber: phoneNumber?.toString(),
             linkPrecedence: "secondary",
-            linkedId: primaryContact.id,
+            linkedId: truePrimary.id,
         });
         await contactRepo.save(newSecondaryContact);
     }
     const allLinkedContacts = await contactRepo.find({
         where: [
-            { id: primaryContact.id },
-            { linkedId: primaryContact.id },
+            { id: truePrimary.id },
+            { linkedId: truePrimary.id },
         ],
     });
     const emails = Array.from(new Set(allLinkedContacts.map((c) => c.email).filter(Boolean)));
@@ -61,7 +65,7 @@ const createOrLinkContact = async (req, res) => {
         .map((c) => c.id);
     return res.json({
         contact: {
-            primaryContatctId: primaryContact.id,
+            primaryContactId: truePrimary.id,
             emails,
             phoneNumbers,
             secondaryContactIds: secondaryIds,

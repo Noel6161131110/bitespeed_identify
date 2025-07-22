@@ -3,19 +3,19 @@ import { AppDataSource } from './database/db';
 import routes from './routes/routes'
 
 AppDataSource.initialize()
-  .then(() => {
-    console.log("✅ Database connection established");
-    
-    const app = express();
-    app.use(express.json());
+    .then(() => {
+        console.log("✅ Database connection established");
 
-    app.use("", routes);
+        const app = express();
+        app.use(express.json());
 
-    const PORT = process.env.PORT || 3000;
-    app.listen(PORT, () => {
-      console.log(`🚀 Server is running on http://localhost:${PORT}`);
+        app.use("", routes);
+
+        const PORT = process.env.PORT || 3000;
+        app.listen(PORT, () => {
+            console.log(`🚀 Server is running on http://localhost:${PORT}`);
+        });
+    })
+    .catch((err) => {
+        console.error("❌ Failed to connect to the database:", err);
     });
-  })
-  .catch((err) => {
-    console.error("❌ Failed to connect to the database:", err);
-});
