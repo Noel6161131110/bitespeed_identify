@@ -1,5 +1,6 @@
 import express from 'express';
 import { AppDataSource } from './database/db';
+import routes from './routes/routes'
 
 AppDataSource.initialize()
   .then(() => {
@@ -8,9 +9,7 @@ AppDataSource.initialize()
     const app = express();
     app.use(express.json());
 
-    app.get('/', (req, res) => {
-      return res.json('Established connection!');
-    });
+    app.use("", routes);
 
     const PORT = process.env.PORT || 3000;
     app.listen(PORT, () => {
